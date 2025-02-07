@@ -12,6 +12,13 @@ YDWE是一个用于制作《魔兽争霸III》(英文名 Warcraft3，下面简�
 4. 编译好的文件可以在`/Build/publish/Release/`找到
 
 
+## 环境需求
+    v142 ATL 工具链生成 14.29
+    v142 MSVC x86/x64 生成工具14.29-16.11
+    v143 ATL 工具链生成 14.40
+    v143 MFC 工具链生成 14.40
+    v143 MSVC x86/x64 生成工具14.40-17.10@sotzaii_shuen
+
 ## 其他引用的项目
 
 * [ydhost](https://github.com/actboy168/ydhost)
