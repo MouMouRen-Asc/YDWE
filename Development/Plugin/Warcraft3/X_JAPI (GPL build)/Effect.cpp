@@ -1,8 +1,11 @@
-#include <warcraft3/jass/hook.h>
-#include <warcraft3/war3_searcher.h>
-#include <base/hook/fp_call.h>
+ï»¿#include <base/hook/fp_call.h>
 #include <base/util/memory.h>
+
+#include <warcraft3/jass/hook.h>
 #include <warcraft3/version.h>
+#include <warcraft3/war3_searcher.h>
+
+#include "CAgentTimer.h"
 #include "util.h"
 
 uint32_t searchSmartPositionSetLocation() {
@@ -13,7 +16,7 @@ uint32_t searchSmartPositionSetLocation() {
     //
     // push     "()V"
     // mov      edx, "SetUnitX"
-    // mov      ecx, [SetUnitXº¯ÊıµÄµØÖ·]  <----
+    // mov      ecx, [SetUnitXå‡½æ•°çš„åœ°å€]  <----
     // call     BindNative
     //=========================================
     ptr = get_war3_searcher().search_string("SetUnitX");
@@ -52,7 +55,7 @@ uint32_t searchSetSpriteTeamColor() {
     //
     // push     "()V"
     // mov      edx, "SetUnitColor"
-    // mov      ecx, [SetUnitColorº¯ÊıµÄµØÖ·]  <----
+    // mov      ecx, [SetUnitColorå‡½æ•°çš„åœ°å€]  <----
     // call     BindNative
     //=========================================
     ptr = get_war3_searcher().search_string("SetUnitColor");
@@ -103,7 +106,7 @@ SetSpriteAnimationByNameAddress searchSetSpriteAnimation() {
     //
     // push     "()V"
     // mov      edx, "SetUnitAnimation"
-    // mov      ecx, [SetUnitAnimationº¯ÊıµÄµØÖ·] <----
+    // mov      ecx, [SetUnitAnimationå‡½æ•°çš„åœ°å€] <----
     // call     BindNative
     //=========================================
     ptr = get_war3_searcher().search_string("SetUnitAnimation");
@@ -164,7 +167,7 @@ uint32_t searchSetSpriteAnimationByIndex() {
     //
     // push     "()V"
     // mov      edx, "SetUnitAnimationByIndex"
-    // mov      ecx, [SetUnitAnimationByIndexº¯ÊıµÄµØÖ·] <----
+    // mov      ecx, [SetUnitAnimationByIndexå‡½æ•°çš„åœ°å€] <----
     // call     BindNative
     //=========================================
     uint32_t ptr = get_war3_searcher().search_string("SetUnitAnimationByIndex");
@@ -185,24 +188,6 @@ uint32_t searchSetSpriteAnimationByIndex() {
     ptr += 5;
     ptr = next_opcode(ptr, 0xE8, 5);
     return convert_function(ptr);
-}
-
-uint32_t searchCAgentTimer_Start() {
-    war3_searcher& s = get_war3_searcher();
-    uint32_t str = s.search_string_ptr("EffectDeathTime", sizeof("EffectDeathTime"));
-
-    for (uint32_t ptr = s.search_int_in_text(str); ptr; ptr = s.search_int_in_text(str, ptr + 1)) {
-        uint32_t func = s.current_function(ptr);
-        if (ptr - func > 0x10) {
-            ptr += 4;
-            ptr = next_opcode(ptr, 0xE8, 5);
-            ptr += 5;
-            ptr = next_opcode(ptr, 0xE8, 5);
-            return convert_function(ptr);
-        }
-    }
-
-    return 0;
 }
 
 uint32_t __cdecl X_SetEffectTimeScale(uint32_t effect, float* pspeed) {
@@ -342,7 +327,7 @@ uint32_t __cdecl X_GetEffectAlpha(uint32_t effect) {
     return ReadMemory<uint8_t>(pSprite + 0x1B0);
 }
 
-uint32_t __cdecl X_SetEffectTeamColor(uint32_t effect, uint32_t/* Êµ¼ÊÉÏ²¢²»ÊÇ handle */ playercolor) {
+uint32_t __cdecl X_SetEffectTeamColor(uint32_t effect, uint32_t/* å®é™…ä¸Šå¹¶ä¸æ˜¯ handle */ playercolor) {
     static uint32_t SetSpriteTeamColor = searchSetSpriteTeamColor();
     uint32_t obj = handle_to_object(effect);
     if (!obj)
@@ -400,7 +385,7 @@ uint32_t __cdecl X_SetEffectAnimationEx(uint32_t effect, uint32_t animName, uint
         }
     }
     else {
-        // ÆäËû°æ±¾Î´²âÊÔ
+        // å…¶ä»–ç‰ˆæœ¬æœªæµ‹è¯•
         base::fast_call<void>(addr.GetAnimationDataFromJassString, animName, AnimData);
     }
     
@@ -456,25 +441,25 @@ uint32_t __cdecl X_RemoveEffect(uint32_t effect) {
     uint32_t pEffect = handle_to_object(effect);
     if (!pEffect)
         return false;
+    CAgentTimer_Stop(pEffect + 0x2C);
     base::this_call_vf<void>(pEffect, 0x5C);
     return true;
 }
 
-uint32_t __cdecl X_RemoveEffectTimed(uint32_t effect, float duration) {
+uint32_t __cdecl X_RemoveEffectTimed(uint32_t effect, float* duration) {
     uint32_t pEffect = handle_to_object(effect);
     if (!pEffect)
         return false;
     uint32_t dontRemove = 0;
     uint32_t pAgentAbsBase = find_objectid_64(objectid_64(ReadMemory(pEffect + 0xC), ReadMemory(pEffect + 0x10)));
-    if (pAgentAbsBase &&                                // agent ´æÔÚ
-        ReadMemory(pAgentAbsBase + 0xC) == '+agl' &&    // Ä¿±êÀàĞÍÊÇ agent
-        !ReadMemory(pAgentAbsBase + 0x20) &&            // ÒÑ±»É¾³ı
-        ReadMemory<int>(pAgentAbsBase + 0x14) < 0       // ÎŞĞ§ id
-    ) // ÉÏÃæµÄ¼ì²éÊÇ¸´ÖÆÄ§ÊŞµÄÂß¼­
+    if (pAgentAbsBase &&                                // agent å­˜åœ¨
+        ReadMemory(pAgentAbsBase + 0xC) == '+agl' &&    // ç›®æ ‡ç±»å‹æ˜¯ agent
+        !ReadMemory(pAgentAbsBase + 0x20) &&            // å·²è¢«åˆ é™¤
+        ReadMemory<int>(pAgentAbsBase + 0x14) < 0       // æ— æ•ˆ id
+    ) // ä¸Šé¢çš„æ£€æŸ¥æ˜¯å¤åˆ¶é­”å…½çš„é€»è¾‘
         dontRemove = 1;
 
-    static uint32_t pAgentTimer_Start = searchCAgentTimer_Start();
-    base::this_call<void>(pAgentTimer_Start, pEffect + 0x2C, duration, 0xD01C4, pEffect, 0 /* ÊÇ·ñÑ­»·? */, dontRemove /* »Øµ÷µÄµÚ¶ş²ÎÊı? */);
+    CAgentTimer_Start(pEffect + 0x2C, duration, 0xD01C4, pEffect, 0, dontRemove);
     return true;
 }
 

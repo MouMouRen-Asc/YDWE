@@ -1,4 +1,4 @@
-#include <warcraft3/war3_searcher.h>
+ï»¿#include <warcraft3/war3_searcher.h>
 #include <warcraft3/jass/hook.h>
 #include <base/hook/replace_pointer.h>
 #include <base/hook/inline.h>
@@ -30,7 +30,7 @@ uint32_t getUnitDamageFunc() {
 uint32_t searchCUnit_RunDamagedEvent() {
     war3_searcher& s = get_war3_searcher();
 
-    for (uint32_t ptr = s.search_int_in_text(524852 /* ÊÂ¼şID */); ptr; ptr = s.search_int_in_text(524852, ptr + 1)) {
+    for (uint32_t ptr = s.search_int_in_text(524852 /* äº‹ä»¶ID */); ptr; ptr = s.search_int_in_text(524852, ptr + 1)) {
         if (ReadMemory<uint8_t>(ptr - 1) == 0x68) // push 0x80234
             return s.current_function(ptr);
     }
@@ -85,7 +85,7 @@ struct event_damage_data {
     }
 };
 
-defineEventData(JAPI_PlayerUnitDamageEventData, 'pumd', 0, uint32_t amount;);
+defineEventData(X_PlayerUnitDamageEventData, 'pumd', 0, uint32_t amount;);
 
 std::deque<event_damage_data> g_edd;
 
@@ -100,7 +100,7 @@ uint32_t __cdecl FakeGetEventDamage() {
     switch (TriggerEvent::GetTriggerEventId()) {
     case EVENT_PLAYER_UNIT_DAMAGED:
     case EVENT_PLAYER_UNIT_DAMAGING:
-        if (JAPI_PlayerUnitDamageEventData* pEventData = (JAPI_PlayerUnitDamageEventData*)TriggerEvent::GetTriggerEventData('pumd'))
+        if (X_PlayerUnitDamageEventData* pEventData = (X_PlayerUnitDamageEventData*)TriggerEvent::GetTriggerEventData('pumd'))
             return pEventData->amount;
         else
             return 0;
@@ -114,7 +114,7 @@ uint32_t __cdecl fake_GetEventDamageSource() {
     switch (TriggerEvent::GetTriggerEventId()) {
     case EVENT_PLAYER_UNIT_DAMAGED:
     case EVENT_PLAYER_UNIT_DAMAGING:
-        if (JAPI_PlayerUnitDamageEventData* pEventData = (JAPI_PlayerUnitDamageEventData*)TriggerEvent::GetTriggerEventData('pumd'))
+        if (X_PlayerUnitDamageEventData* pEventData = (X_PlayerUnitDamageEventData*)TriggerEvent::GetTriggerEventData('pumd'))
             return create_handle(GetObjectByHash(pEventData->filterUnit.a, pEventData->filterUnit.b));
         else
             return 0;
@@ -128,7 +128,7 @@ uint32_t __fastcall FakeUnitDamageFunc(uint32_t _this, uint32_t _edx, uint32_t a
     g_edd.push_back(event_damage_data(is_physical, ptr));
 
     if (TriggerEvent::IsEventRegistered(TriggerEvent::GetUnitOwner(_this), EVENT_PLAYER_UNIT_DAMAGING)) {
-        JAPI_PlayerUnitDamageEventData* pPlayerUnitDamageEventData = (JAPI_PlayerUnitDamageEventData*)create_by_typeid('pumd');
+        X_PlayerUnitDamageEventData* pPlayerUnitDamageEventData = (X_PlayerUnitDamageEventData*)create_by_typeid('pumd');
 
         pPlayerUnitDamageEventData->amount = ptr->amount;
 
@@ -136,7 +136,7 @@ uint32_t __fastcall FakeUnitDamageFunc(uint32_t _this, uint32_t _edx, uint32_t a
     }
 
     if (g_edd.back().change)
-        ptr->amount = g_edd.back().new_amount; // ²»ÓÃ¹Ü C6011:È¡ÏûNULLÖ¸ÕëÒıÓÃ
+        ptr->amount = g_edd.back().new_amount; // ä¸ç”¨ç®¡ C6011:å–æ¶ˆNULLæŒ‡é’ˆå¼•ç”¨
 
     g_edd.back() = event_damage_data(is_physical, ptr);
 
@@ -201,7 +201,7 @@ uint32_t __cdecl X_SetDamageEventDamageValue(uint32_t value) {
 uint32_t real_CUnit_RunDamagedEvent = 0;
 uint32_t __fastcall fake_CUnit_RunDamagedEvent(uint32_t _this, uint32_t, float* amount, uint32_t pSrcUnit) {
     if (TriggerEvent::IsEventRegistered(TriggerEvent::GetUnitOwner(_this), EVENT_PLAYER_UNIT_DAMAGED)) {
-        JAPI_PlayerUnitDamageEventData* pPlayerUnitDamageEventData = (JAPI_PlayerUnitDamageEventData*)create_by_typeid('pumd');
+        X_PlayerUnitDamageEventData* pPlayerUnitDamageEventData = (X_PlayerUnitDamageEventData*)create_by_typeid('pumd');
 
         pPlayerUnitDamageEventData->amount = ReadMemory((uint32_t)amount);
 
@@ -211,7 +211,7 @@ uint32_t __fastcall fake_CUnit_RunDamagedEvent(uint32_t _this, uint32_t, float* 
     if (!g_edd.empty()) {
         event_damage_data& edd = g_edd.back();
         if (edd.change)
-            *amount = *(float*)&edd.new_amount; // ²»ÓÃ¹Ü C6011:È¡ÏûNULLÖ¸ÕëÒıÓÃ
+            *amount = *(float*)&edd.new_amount; // ä¸ç”¨ç®¡ C6011:å–æ¶ˆNULLæŒ‡é’ˆå¼•ç”¨
     }
     return ret;
 }
@@ -246,25 +246,26 @@ uint32_t __cdecl X_SetDamageEventWeaponType(uint32_t type) {
 }
 
 init(UnitEvent_DamageData) {
-    setupEventData(JAPI_PlayerUnitDamageEventData, 'pumd', EVENT_PLAYER_UNIT_DAMAGING, EVENT_PLAYER_UNIT_DAMAGED);
+    // TODO: æ·»åŠ  æŒ‡å®šå•ä½äº‹ä»¶ åé‡æè¿™æ•´ä¸ªæºä»£ç  (ä¸ä½¿ç”¨ g_edd)
+    setupEventData(X_PlayerUnitDamageEventData, 'pumd', EVENT_PLAYER_UNIT_DAMAGING, EVENT_PLAYER_UNIT_DAMAGED);
 
-    // ¸²¸Çµô yd_jass_api.dll µÄ hook
+    // è¦†ç›–æ‰ yd_jass_api.dll çš„ hook
     RealUnitDamageFunc = getUnitDamageFunc();
     base::hook::replace_pointer(get_vfn_ptr(".?AVCUnit@@") + 0x120, (uint32_t)FakeUnitDamageFunc);
-    // ¸²¸Çµô yd_jass_api µÄº¯Êı
+    // è¦†ç›–æ‰ yd_jass_api çš„å‡½æ•°
     jass::japi_hook("GetEventDamage", &RealGetEventDamage, (uint32_t)FakeGetEventDamage);
     jass::japi_add((uint32_t)EXGetEventDamageData,                     "EXGetEventDamageData",                     "(I)I");
     jass::japi_add((uint32_t)X_SetDamageEventDamageValue,              "EXSetEventDamage",                         "(R)B");
     // alias
     jass::japi_add((uint32_t)X_SetDamageEventDamageValue,              "X_SetDamageEventDamageValue",              "(R)B");
 
-    // Íæ¼Òµ¥Î»½ÓÊÜÉËº¦ÊÂ¼ş
+    // ç©å®¶å•ä½æ¥å—ä¼¤å®³äº‹ä»¶
     real_CUnit_RunDamagedEvent = searchCUnit_RunDamagedEvent();
     base::hook::install(&real_CUnit_RunDamagedEvent, (uint32_t)fake_CUnit_RunDamagedEvent);
     jass::japi_hook("GetEventDamageSource", &real_GetEventDamageSource, (uint32_t)fake_GetEventDamageSource);
     jass::japi_add((uint32_t)X_TriggerRegisterPlayerUnitDamagedEvent,  "X_TriggerRegisterPlayerUnitDamagedEvent",  "(Htrigger;Hplayer;)Hevent;");
 
-    // Íæ¼Òµ¥Î»½ÓÊÜÉËº¦ÊÂ¼ş (¼ÆËã»¤¼×Ç°)
+    // ç©å®¶å•ä½æ¥å—ä¼¤å®³äº‹ä»¶ (è®¡ç®—æŠ¤ç”²å‰)
     jass::japi_add((uint32_t)X_TriggerRegisterPlayerUnitDamagingEvent, "X_TriggerRegisterPlayerUnitDamagingEvent", "(Htrigger;Hplayer;)Hevent;");
     jass::japi_add((uint32_t)X_SetDamageEventAttackType,               "X_SetDamageEventAttackType",               "(Hattacktype;)B");
     jass::japi_add((uint32_t)X_SetDamageEventDamageType,               "X_SetDamageEventDamageType",               "(Hdamagetype;)B");

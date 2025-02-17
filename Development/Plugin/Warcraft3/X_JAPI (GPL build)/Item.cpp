@@ -1,11 +1,14 @@
+ï»¿#include <map>
+
 #include <base/hook/fp_call.h>
+#include <base/util/memory.h>
+
+#include <warcraft3/event.h>  
+#include <warcraft3/hashtable.h>
 #include <warcraft3/jass/hook.h>
 #include <warcraft3/version.h>
-#include <warcraft3/war3_searcher.h>    
-#include <warcraft3/hashtable.h>
-#include <map>
-#include <base/util/memory.h>
-#include <warcraft3/event.h>
+#include <warcraft3/war3_searcher.h>  
+
 #include "util.h"
 
 static uint32_t hashid(uint32_t id) {
@@ -36,7 +39,7 @@ uint32_t search_item_data_table() {
         return ReadMemory(ptr + 1);
     }
     else {
-        // ±» inline ÁË
+        // è¢« inline äº†
         // Game.dll + 0xBEC238
         ptr = next_opcode(ptr, 0xA1, 5);
         return ReadMemory(ptr + 1) - 0x24;
@@ -129,7 +132,7 @@ uint32_t __cdecl X_SetItemDataInteger(uint32_t typeID, uint32_t dataType, uint32
 
 std::map<uint32_t, uint32_t> item_color;
 uint32_t real_GetItemColorById;
-uint32_t* __fastcall fake_GetItemColorById(uint32_t* out, uint32_t pItemID /* Ô­±¾ÊÇÎïÆ·ÀàĞÍ, »»³É lea ÁËËùÒÔÏÖÔÚÊÇÖ¸Õë */) {
+uint32_t* __fastcall fake_GetItemColorById(uint32_t* out, uint32_t pItemID /* åŸæœ¬æ˜¯ç‰©å“ç±»å‹, æ¢æˆ lea äº†æ‰€ä»¥ç°åœ¨æ˜¯æŒ‡é’ˆ */) {
     uint32_t pItem = pItemID - 0x30;
     auto i = item_color.find(pItem);
     if (i == item_color.end())
@@ -148,20 +151,20 @@ void patchCItem_UpdateColor() {
 
 uint32_t __cdecl X_GetItemColor(uint32_t item) {
     uint32_t pItem = handle_to_object(item);
-    if (!pItem || !type_check(get_object_type(pItem), 'item'))
+    if (!pItem || !type_check_s(pItem, 'item'))
         return 0xFFFFFFFF;
-    return *fake_GetItemColorById(&pItem/* ¸´ÓÃ±äÁ¿ */, pItem + 0x30);
+    return *fake_GetItemColorById(&pItem/* å¤ç”¨å˜é‡ */, pItem + 0x30);
 }
 uint32_t __cdecl X_SetItemColor(uint32_t item, uint32_t color) {
     uint32_t pItem = handle_to_object(item);
-    if (!pItem || !type_check(get_object_type(pItem), 'item'))
+    if (!pItem || !type_check_s(pItem, 'item'))
         return false;
     item_color[pItem] = color;
     return true;
 }
 uint32_t __cdecl X_ResetItemColor(uint32_t item) {
     uint32_t pItem = handle_to_object(item);
-    if (!pItem || !type_check(get_object_type(pItem), 'item'))
+    if (!pItem || !type_check_s(pItem, 'item'))
         return false;
     auto i = item_color.find(pItem);
     if (i == item_color.end())

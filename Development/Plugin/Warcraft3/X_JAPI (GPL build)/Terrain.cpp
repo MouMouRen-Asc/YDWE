@@ -1,6 +1,8 @@
+ï»¿#include <base/hook/fp_call.h>
+
 #include <warcraft3/jass/hook.h>
 #include <warcraft3/war3_searcher.h>
-#include <base/hook/fp_call.h>
+
 #include "util.h"
 
 uint32_t searchGetTerrainZ() {
@@ -11,7 +13,7 @@ uint32_t searchGetTerrainZ() {
     //
     // push     "()V"
     // mov      edx, "GetLocationZ"
-    // mov      ecx, [GetLocationZº¯ÊýµÄµØÖ·]  <----
+    // mov      ecx, [GetLocationZå‡½æ•°çš„åœ°å€]  <----
     // call     BindNative
     //=========================================
     ptr = get_war3_searcher().search_string("GetLocationZ");
